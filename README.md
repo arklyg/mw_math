@@ -1,2 +1,2 @@
 # mw_math
-C++ math lib for array calculation maily.
+C++ math lib for array calculation mainly.
