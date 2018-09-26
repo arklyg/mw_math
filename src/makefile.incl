@@ -1,0 +1,55 @@
+#macro definations
+MWMATH_MACRO = #-MWMATH_VERSION_STRING='"Version: MicroWave Math Lib 0.1a"'
+
+#pthread, rt and other stuff static
+STATIC_LINK = #-static
+
+#lib directory definations
+DIR_MWMATH_LIB = /home/gabriel/Projects/mw_math/trunk/src/main
+DIR_MWSTL_LIB = /home/gabriel/Projects/mw_stl/trunk/src/main
+DIR_MWGLOBAL_LIB = /home/gabriel/Projects/mw_global/trunk/src/main
+
+#lib file definations
+STATIC_LIB_LOG4CPLUS = /usr/local/lib/liblog4cplus.a
+STATIC_LIB_MWMATH = $(DIR_MWMATH_LIB)/libmwmath.a
+STATIC_LIB_MWSTL = $(DIR_MWSTL_LIB)/libmwstl.a
+STATIC_LIB_MWGLOBAL = $(DIR_MWGLOBAL_LIB)/libmwglobal.a
+
+#other lib definations
+LIB_RT = -lrt
+
+#inc directory definations
+DIR_LOCAL_INC = /usr/local/include
+DIR_LOG4CPLUS_INC = /usr/local/include/log4cplus
+DIR_MWGLOBAL_INC = /home/gabriel/Projects/mw_global/trunk/src/main
+DIR_MWMATH_INC = /home/gabriel/Projects/mw_math/trunk/src/main
+DIR_MWSTL_INC = /home/gabriel/Projects/mw_stl/trunk/src/main
+
+#inc definations
+INC_LOCAL = -I$(DIR_LOCAL_INC)
+INC_LOG4CPLUS = -I$(DIR_LOG4CPLUS_INC)
+INC_MWGLOBAL = -I$(DIR_MWGLOBAL_INC)
+INC_MWMATH = -I$(DIR_MWMATH_INC)
+INC_MWSTL = -I$(DIR_MWSTL_INC)
+
+#src directory definations
+DIR_TEST = $(PROJECT_SRC_PATH)/$(TEST)
+DIR_MAIN = $(PROJECT_SRC_PATH)/$(MAIN)
+
+#cxx flags
+CXXFLAGS = -Wall -g -ftemplate-depth-50 
+
+#files
+TEST_OBJS = $(patsubst %.cpp, %.o, $(wildcard $(DIR_TEST)/*.cpp))
+LIB_OBJS = $(patsubst %.cpp, %.o, $(wildcard $(DIR_MAIN)/*.cpp))
+
+#common command
+MAKE = make
+CP = cp
+AR = ar cr
+CLEAN = $(RM) $(BUILD) *.o
+REBUILD = $(CLEAN) && $(MAKE)
+
+#builds
+TEST = test
+MAIN = main
