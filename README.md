@@ -1,2 +1,2 @@
 # mw_math
-C++ math lib for array calculation mainly.
+C++ math lib for array calculation mainly, multithread enabled.
