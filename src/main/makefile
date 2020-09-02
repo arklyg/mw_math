@@ -15,7 +15,7 @@ all:$(BUILD)
 $(BUILD):$(LIB_OBJS)
 	$(AR) $@ $^
 
-%.o:%.cpp
+%.o:%.cc
 	$(CXX) $(CXXFLAGS) $(MWMATH_MACRO) $(INC_MWSTL) $(INC_MWMATH) $(INC_MWGLOBAL) $(INC_LOG4CPLUS) -c $< -o $@
 
 clean:

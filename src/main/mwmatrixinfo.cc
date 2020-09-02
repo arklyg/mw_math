@@ -26,22 +26,29 @@
 //           Beijing, China
 
 
-#ifndef _FIXED_AREA_SIN_BY_COUNT_FUNCTION_H_
-#define _FIXED_AREA_SIN_BY_COUNT_FUNCTION_H_
+#include "mwmatrixinfo.h"
 
-#include <mwsingleton.h>
+MWMatrixInfo::MWMatrixInfo(size_t row_num, size_t column_num)
+    : _row_num(row_num)
+    , _column_num(column_num) {
+}
 
-#include "mwunderivablemathfunction.h"
+bool MWMatrixInfo::operator ==(const MWMatrixInfo &info) {
+    return _row_num == info._row_num && _column_num == info._column_num;
+}
 
-class FixedAreaSinByCountFunction;
+bool MWMatrixInfo::operator !=(const MWMatrixInfo &info) {
+    return !(*this == info);
+}
 
-class FixedAreaSinByCountFunction : public MWUnderivableMathFunction,
-    public MWSingleton<FixedAreaSinByCountFunction> {
-  public:
-    virtual MWVector<MWData> GetValueStructure(const MWVector<MWData> &input)
-    const;
-    virtual MWVector<MWData> &AssignValue(const MWVector<MWData> &input,
-                                          MWVector<MWData> &ret) const;
-};
+void MWMatrixInfo::AddSequence() {
+    AddSequenceData(&_row_num);
+    AddSequenceData(&_column_num);
+}
 
-#endif
+std::ostream &operator <<(std::ostream &os, const MWMatrixInfo &info) {
+    os << "(_row_num = " << info._row_num << ", _column_num = " << info._column_num
+       << ")";
+
+    return os;
+}

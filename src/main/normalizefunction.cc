@@ -26,22 +26,18 @@
 //           Beijing, China
 
 
-#ifndef _FIXED_AREA_SIN_BY_COUNT_FUNCTION_H_
-#define _FIXED_AREA_SIN_BY_COUNT_FUNCTION_H_
+#include "normalizefunction.h"
 
-#include <mwsingleton.h>
+MWVector<MWData> NormalizeFunction::GetValueStructure(
+    const MWVector<MWData> &input) const {
+    return MWVector<MWData>(1);
+}
 
-#include "mwunderivablemathfunction.h"
-
-class FixedAreaSinByCountFunction;
-
-class FixedAreaSinByCountFunction : public MWUnderivableMathFunction,
-    public MWSingleton<FixedAreaSinByCountFunction> {
-  public:
-    virtual MWVector<MWData> GetValueStructure(const MWVector<MWData> &input)
-    const;
-    virtual MWVector<MWData> &AssignValue(const MWVector<MWData> &input,
-                                          MWVector<MWData> &ret) const;
-};
-
-#endif
+MWVector<MWData> &NormalizeFunction::AssignValue(const MWVector<MWData> &input,
+                                                 MWVector<MWData> &ret) const {
+    // MWData input = input[0], input_min = input[1], input_max = input[2], 
+    // output_min = input[3], output_max = input[4];
+    ret[0] = (input[0] - input[1]) / (input[2] - input[1]) *
+             (input[4] - input[3]) + input[3];
+    return ret;
+}

@@ -1,101 +1,298 @@
+// Micro Wave Math
+// Copyright (c) 2015-2020, Ark Lee
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+// You must obey the GNU General Public License in all respects for
+// all of the code used.  If you modify file(s) with this exception, 
+// you may extend this exception to your version of the file(s), but 
+// you are not obligated to do so.  If you do not wish to do so, delete 
+// this exception statement from your version. If you delete this exception 
+// statement from all source files in the program, then also delete it here.
+//
+// Contact:  Ark Lee <arklee@houduan.online>
+//           Beijing, China
+
+
 #include <proclockable.h>
 #include "mwmatrixhelper.h"
 
 #define VECTORMATRIXMULTITHREADCALCULATOR_FUNCTION_ARG_COUNT_MAX 2
 
-enum VectorMatrixMultiThreadCalculatorFunctionType
-{
-	VectorMatrixMultiThreadCalculatorFunctionType222,
-	VectorMatrixMultiThreadCalculatorFunctionType221,
-	VectorMatrixMultiThreadCalculatorFunctionType220,
-	VectorMatrixMultiThreadCalculatorFunctionType212,
-	VectorMatrixMultiThreadCalculatorFunctionType22,
+enum VectorMatrixMultiThreadCalculatorFunction {
+    VectorMatrixMultiThreadCalculatorFunctionAssignPlus222,
+    VectorMatrixMultiThreadCalculatorFunctionAssignMinus222,
+    VectorMatrixMultiThreadCalculatorFunctionAssignTimes222,
+    VectorMatrixMultiThreadCalculatorFunctionAssignTimesTransFormed222,
+    VectorMatrixMultiThreadCalculatorFunctionAssignDiagonaledTimesTransformed222,
+    VectorMatrixMultiThreadCalculatorFunctionAssignDiagonaledTimes222,
+    VectorMatrixMultiThreadCalculatorFunctionAssignPlus221,
+    VectorMatrixMultiThreadCalculatorFunctionAssignTimes221,
+    VectorMatrixMultiThreadCalculatorFunctionAssignDiagonaledTimes221,
+    VectorMatrixMultiThreadCalculatorFunctionAssignTimes220,
+    VectorMatrixMultiThreadCalculatorFunctionAssignTimes212,
+    VectorMatrixMultiThreadCalculatorFunctionAssignSquare22,
+    VectorMatrixMultiThreadCalculatorFunctionAssign22,
+    VectorMatrixMultiThreadCalculatorFunctionAssignSum22,
 };
 
-class VectorMatrixMultiThreadCalculator;
+class VectorMatrixMultiThreadCalculator {
+  private:
+    static pthread_cond_t _start_cond;
+    static pthread_cond_t _finish_cond;
+    static ProcLockable _start_lock;
+    static ProcLockable _finish_lock;
+    static std::vector<pthread_t> _thread_id_vector;
+    static std::vector<size_t> _worker_id_vector;
+    static std::vector<bool> _start_signal_vector;
 
-typedef MWVector<MWMatrix<MWData> > &(* AssignFunction222Pt)(const MWVector<MWMatrix<MWData> > &, const MWVector<MWMatrix<MWData> > &, MWVector<MWMatrix<MWData> > &, size_t, size_t);
-typedef MWVector<MWMatrix<MWData> > &(* AssignFunction221Pt)(const MWVector<MWMatrix<MWData> > &, const MWMatrix<MWData> &, MWVector<MWMatrix<MWData> > &, size_t, size_t);
-typedef MWVector<MWMatrix<MWData> > &(* AssignFunction220Pt)(const MWVector<MWMatrix<MWData> > &, const MWData &, MWVector<MWMatrix<MWData> > &, size_t, size_t);
-typedef MWVector<MWMatrix<MWData> > &(* AssignFunction212Pt)(const MWMatrix<MWData> &, const MWVector<MWMatrix<MWData> > &, MWVector<MWMatrix<MWData> > &, size_t, size_t);
-typedef MWVector<MWMatrix<MWData> > &(* AssignFunction22Pt)(const MWVector<MWMatrix<MWData> > &, MWVector<MWMatrix<MWData> > &, size_t, size_t);
-typedef MWVector<MWMatrix<MWData> > &(* AssignFunction21Pt)(const MWMatrix<MWData> &, MWVector<MWMatrix<MWData> > &, size_t, size_t);
+    static size_t _finished_count;
+    static VectorMatrixMultiThreadCalculatorFunction _function;
+    static const MWVector<MWMatrix<MWData> > *_vector_matrix_pt_1;
+    static const MWVector<MWMatrix<MWData> > *_vector_matrix_pt_2;
+    static const MWMatrix<MWData> *_matrix_pt_1;
+    static const MWData *_data_pt_1;
+    static MWVector<MWMatrix<MWData> > *_ret_pt;
 
-class VectorMatrixMultiThreadCalculator
-{
-private:
-	static pthread_cond_t _start_cond;
-	static pthread_cond_t _finish_cond;
-	static ProcLockable _start_lock;
-	static ProcLockable _finish_lock;
-	static vector<pthread_t> _thread_id_vector;
-	static vector<size_t> _worker_id_vector;
-	static vector<bool> _start_signal_vector;
+    static bool _is_exit;
 
-	static size_t _finished_count;
-	static VectorMatrixMultiThreadCalculatorFunctionType _function_type;
-	static void* _function_handle;
-	static vector<const void*> _arg_pt_vector;
-	static MWVector<MWMatrix<MWData> >* _ret_pt;
+  private:
+    static int AssignWorkDescription(size_t worker_id, 
+                                     size_t work_size,
+                                     size_t &off, 
+                                     size_t &work_load);
+    static void *Run(void *arg);
+    static MWVector<MWMatrix<MWData> > &AssignOperateMultiThread();
 
-	static bool _is_exit;
+  public:
+    static void Initialize(size_t thread_num);
+    static void Finalize();
 
-private:
-	static MWVector<MWMatrix<MWData> > &assign_plus_222(const MWVector<MWMatrix<MWData> > &v_m1, const MWVector<MWMatrix<MWData> > &v_m2, MWVector<MWMatrix<MWData> > &ret, size_t off, size_t len);
-	static MWVector<MWMatrix<MWData> > &assign_minus_222(const MWVector<MWMatrix<MWData> > &v1, const MWVector<MWMatrix<MWData> > &v2, MWVector<MWMatrix<MWData> > &ret, size_t off, size_t len);
-	static MWVector<MWMatrix<MWData> > &assign_times_222(const MWVector<MWMatrix<MWData> > &v1, const MWVector<MWMatrix<MWData> > &v2, MWVector<MWMatrix<MWData> > &ret, size_t off, size_t len);
-	static MWVector<MWMatrix<MWData> > &assign_times_transformed_222(const MWVector<MWMatrix<MWData> > &v1, const MWVector<MWMatrix<MWData> > &v2, MWVector<MWMatrix<MWData> > &ret, size_t off, size_t len);
-	static MWVector<MWMatrix<MWData> > &assign_diagonaled_times_transformed_222(const MWVector<MWMatrix<MWData> > &v1, const MWVector<MWMatrix<MWData> > &v2, MWVector<MWMatrix<MWData> > &ret, size_t off, size_t len);
-	static MWVector<MWMatrix<MWData> > &assign_diagonaled_times_222(const MWVector<MWMatrix<MWData> > &v1, const MWVector<MWMatrix<MWData> > &v2, MWVector<MWMatrix<MWData> > &ret, size_t off, size_t len);
+    static MWVector<MWVector<MWMatrix<MWData> > > &AssignTimesTransformed(
+        const MWVector<MWVector<MWMatrix<MWData> > > &v_m1,
+        const MWVector<MWVector<MWMatrix<MWData> > > &v_m2,
+        MWVector<MWVector<MWMatrix<MWData> > > &ret);
 
-	static MWVector<MWMatrix<MWData> > &assign_plus_221(const MWVector<MWMatrix<MWData> > &v, const MWMatrix<MWData> &m, MWVector<MWMatrix<MWData> > &ret, size_t off, size_t len);
-	static MWVector<MWMatrix<MWData> > &assign_times_221(const MWVector<MWMatrix<MWData> > &v, const MWMatrix<MWData> &m, MWVector<MWMatrix<MWData> > &ret, size_t off, size_t len);
-	static MWVector<MWMatrix<MWData> > &assign_diagonaled_times_transformed_221(const MWVector<MWMatrix<MWData> > &v, const MWMatrix<MWData> &m, MWVector<MWMatrix<MWData> > &ret, size_t off, size_t len);
+    inline static MWVector<MWMatrix<MWData> > &AssignPlus(
+        const MWVector<MWMatrix<MWData> > &v1, 
+        const MWVector<MWMatrix<MWData> > &v2,
+        MWVector<MWMatrix<MWData> > &ret);
+    inline static MWVector<MWMatrix<MWData> > &AssignMinus(
+        const MWVector<MWMatrix<MWData> > &v1, 
+        const MWVector<MWMatrix<MWData> > &v2,
+        MWVector<MWMatrix<MWData> > &ret);
+    inline static MWVector<MWMatrix<MWData> > &AssignTimes(
+        const MWVector<MWMatrix<MWData> > &v1, 
+        const MWVector<MWMatrix<MWData> > &v2,
+        MWVector<MWMatrix<MWData> > &ret);
+    inline static MWVector<MWMatrix<MWData> > &AssignTimesTransformed(
+        const MWVector<MWMatrix<MWData> > &v1, 
+        const MWVector<MWMatrix<MWData> > &v2,
+        MWVector<MWMatrix<MWData> > &ret);
+    inline static MWVector<MWMatrix<MWData> > &AssignDiagonaledTimesTransformed(
+        const MWVector<MWMatrix<MWData> > &v1, 
+        const MWVector<MWMatrix<MWData> > &v2,
+        MWVector<MWMatrix<MWData> > &ret);
+    inline static MWVector<MWMatrix<MWData> > &AssignDiagonaledTimes(
+        const MWVector<MWMatrix<MWData> > &v1, 
+        const MWVector<MWMatrix<MWData> > &v2,
+        MWVector<MWMatrix<MWData> > &ret);
 
-	static MWVector<MWMatrix<MWData> > &assign_times_220(const MWVector<MWMatrix<MWData> > &v, const MWData &scale, MWVector<MWMatrix<MWData> > &ret, size_t off, size_t len);
+    inline static MWVector<MWMatrix<MWData> > &AssignPlus(
+        const MWVector<MWMatrix<MWData> > &v, 
+        const MWMatrix<MWData> &m,
+        MWVector<MWMatrix<MWData> > &ret);
+    inline static MWVector<MWMatrix<MWData> > &AssignTimes(
+        const MWVector<MWMatrix<MWData> > &v, 
+        const MWMatrix<MWData> &m,
+        MWVector<MWMatrix<MWData> > &ret);
+    inline static MWVector<MWMatrix<MWData> > &AssignDiagonaledTimesTransformed(
+        const MWVector<MWMatrix<MWData> > &v, 
+        const MWMatrix<MWData> &m,
+        MWVector<MWMatrix<MWData> > &ret);
 
-	static MWVector<MWMatrix<MWData> > &assign_times_212(const MWMatrix<MWData> &m, const MWVector<MWMatrix<MWData> > &v, MWVector<MWMatrix<MWData> > &ret, size_t off, size_t len);
+    inline static MWVector<MWMatrix<MWData> > &AssignTimes(
+        const MWVector<MWMatrix<MWData> > &v, 
+        const MWData &scale,
+        MWVector<MWMatrix<MWData> > &ret);
 
-	static MWVector<MWMatrix<MWData> > &assign_square_22(const MWVector<MWMatrix<MWData> > &v, MWVector<MWMatrix<MWData> > &ret, size_t off, size_t len);
-	static MWVector<MWMatrix<MWData> > &assign_22(const MWVector<MWMatrix<MWData> > &v, MWVector<MWMatrix<MWData> > &ret, size_t off, size_t len);
+    inline static MWVector<MWMatrix<MWData> > &AssignTimes(
+        const MWMatrix<MWData> &m,
+        const MWVector<MWMatrix<MWData> > &v,
+        MWVector<MWMatrix<MWData> > &ret);
 
-	static MWVector<MWMatrix<MWData> > &assign_sum_22(const MWVector<MWMatrix<MWData> > &v, MWVector<MWMatrix<MWData> > &mid_ret, size_t off, size_t len);
+    inline static MWVector<MWMatrix<MWData> > &AssignSquare(
+        const MWVector<MWMatrix<MWData> > &v, 
+        MWVector<MWMatrix<MWData> > &ret);
+    inline static MWVector<MWMatrix<MWData> > &Assign(
+        const MWVector<MWMatrix<MWData> > &v,
+        MWVector<MWMatrix<MWData> > &ret);
 
-	static void assign_work_description(size_t worker_id, size_t work_size, size_t &off, size_t &work_load);
-
-	static void assign_operation_222(void* function_handle, size_t worker_id);
-	static void assign_operation_221(void* function_handle, size_t worker_id);
-	static void assign_operation_220(void* function_handle, size_t worker_id);
-	static void assign_operation_212(void* function_handle, size_t worker_id);
-	static void assign_operation_22(void* function_handle, size_t worker_id);
-
-	static void* run(void* arg);
-
-	static MWVector<MWMatrix<MWData> > &assign_operate_multi_thread(VectorMatrixMultiThreadCalculatorFunctionType function_type, void* function_handle, const void* v1_pt, const void* v2_pt, MWVector<MWMatrix<MWData> >* ret_pt);
-
-public:
-	static void initialize(size_t thread_num);
-	static void finalize();
-
-	static MWVector<MWVector<MWMatrix<MWData> > > &assign_times_transformed(const MWVector<MWVector<MWMatrix<MWData> > > &v_m1, const MWVector<MWVector<MWMatrix<MWData> > > &v_m2, MWVector<MWVector<MWMatrix<MWData> > > &ret);
-
-	static MWVector<MWMatrix<MWData> > &assign_plus(const MWVector<MWMatrix<MWData> > &v1, const MWVector<MWMatrix<MWData> > &v2, MWVector<MWMatrix<MWData> > &ret);
-	static MWVector<MWMatrix<MWData> > &assign_minus(const MWVector<MWMatrix<MWData> > &v1, const MWVector<MWMatrix<MWData> > &v2, MWVector<MWMatrix<MWData> > &ret);
-	static MWVector<MWMatrix<MWData> > &assign_times(const MWVector<MWMatrix<MWData> > &v1, const MWVector<MWMatrix<MWData> > &v2, MWVector<MWMatrix<MWData> > &ret);
-	static MWVector<MWMatrix<MWData> > &assign_times_transformed(const MWVector<MWMatrix<MWData> > &v1, const MWVector<MWMatrix<MWData> > &v2, MWVector<MWMatrix<MWData> > &ret);
-	static MWVector<MWMatrix<MWData> > &assign_diagonaled_times_transformed(const MWVector<MWMatrix<MWData> > &v1, const MWVector<MWMatrix<MWData> > &v2, MWVector<MWMatrix<MWData> > &ret);
-	static MWVector<MWMatrix<MWData> > &assign_diagonaled_times(const MWVector<MWMatrix<MWData> > &v1, const MWVector<MWMatrix<MWData> > &v2, MWVector<MWMatrix<MWData> > &ret);
-
-	static MWVector<MWMatrix<MWData> > &assign_plus(const MWVector<MWMatrix<MWData> > &v, const MWMatrix<MWData> &m, MWVector<MWMatrix<MWData> > &ret);
-	static MWVector<MWMatrix<MWData> > &assign_times(const MWVector<MWMatrix<MWData> > &v, const MWMatrix<MWData> &m, MWVector<MWMatrix<MWData> > &ret);
-	static MWVector<MWMatrix<MWData> > &assign_diagonaled_times_transformed(const MWVector<MWMatrix<MWData> > &v, const MWMatrix<MWData> &m, MWVector<MWMatrix<MWData> > &ret);
-
-	static MWVector<MWMatrix<MWData> > &assign_times(const MWVector<MWMatrix<MWData> > &v, const MWData &scale, MWVector<MWMatrix<MWData> > &ret);
-
-	static MWVector<MWMatrix<MWData> > &assign_times(const MWMatrix<MWData> &m, const MWVector<MWMatrix<MWData> > &v, MWVector<MWMatrix<MWData> > &ret);
-
-	static MWVector<MWMatrix<MWData> > &assign_square(const MWVector<MWMatrix<MWData> > &v, MWVector<MWMatrix<MWData> > &ret);
-	static MWVector<MWMatrix<MWData> > &assign(const MWVector<MWMatrix<MWData> > &v, MWVector<MWMatrix<MWData> > &ret);
-
-	static MWMatrix<MWData> &assign_sum(const MWVector<MWMatrix<MWData> > &v, MWMatrix<MWData> &ret);
+    inline static MWMatrix<MWData> &AssignSum(
+        const MWVector<MWMatrix<MWData> > &v,
+        MWMatrix<MWData> &ret);
 };
+
+inline MWVector<MWMatrix<MWData> > &VectorMatrixMultiThreadCalculator::AssignPlus(
+    const MWVector<MWMatrix<MWData> > &v1, 
+    const MWVector<MWMatrix<MWData> > &v2,
+    MWVector<MWMatrix<MWData> > &ret) {
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssignPlus222;
+    _vector_matrix_pt_1 = &v1;
+    _vector_matrix_pt_2 = &v2;
+    _ret_pt = &ret;
+    return AssignOperateMultiThread();
+}
+
+inline MWVector<MWMatrix<MWData> > &VectorMatrixMultiThreadCalculator::AssignMinus(
+    const MWVector<MWMatrix<MWData> > &v1, 
+    const MWVector<MWMatrix<MWData> > &v2,
+    MWVector<MWMatrix<MWData> > &ret) {
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssignMinus222;
+    _vector_matrix_pt_1 = &v1;
+    _vector_matrix_pt_2 = &v2;
+    _ret_pt = &ret;
+    return AssignOperateMultiThread();
+}
+
+inline MWVector<MWMatrix<MWData> > &VectorMatrixMultiThreadCalculator::AssignTimes(
+    const MWVector<MWMatrix<MWData> > &v1, 
+    const MWVector<MWMatrix<MWData> > &v2,
+    MWVector<MWMatrix<MWData> > &ret) {
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssignTimes222;
+    _vector_matrix_pt_1 = &v1;
+    _vector_matrix_pt_2 = &v2;
+    _ret_pt = &ret;
+    return AssignOperateMultiThread();
+}
+
+inline MWVector<MWMatrix<MWData> > &VectorMatrixMultiThreadCalculator::AssignTimesTransformed(
+    const MWVector<MWMatrix<MWData> > &v1, 
+    const MWVector<MWMatrix<MWData> > &v2,
+    MWVector<MWMatrix<MWData> > &ret) {
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssignTimesTransFormed222;
+    _vector_matrix_pt_1 = &v1;
+    _vector_matrix_pt_2 = &v2;
+    _ret_pt = &ret;
+    return AssignOperateMultiThread();
+}
+
+inline MWVector<MWMatrix<MWData> > &VectorMatrixMultiThreadCalculator::AssignDiagonaledTimesTransformed(
+    const MWVector<MWMatrix<MWData> > &v1, 
+    const MWVector<MWMatrix<MWData> > &v2,
+    MWVector<MWMatrix<MWData> > &ret) {
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssignDiagonaledTimesTransformed222;
+    _vector_matrix_pt_1 = &v1;
+    _vector_matrix_pt_2 = &v2;
+    _ret_pt = &ret;
+    return AssignOperateMultiThread();
+}
+
+inline MWVector<MWMatrix<MWData> > &VectorMatrixMultiThreadCalculator::AssignDiagonaledTimes(
+    const MWVector<MWMatrix<MWData> > &v1, 
+    const MWVector<MWMatrix<MWData> > &v2,
+    MWVector<MWMatrix<MWData> > &ret) {
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssignDiagonaledTimes222;
+    _vector_matrix_pt_1 = &v1;
+    _vector_matrix_pt_2 = &v2;
+    _ret_pt = &ret;
+    return AssignOperateMultiThread();
+}
+
+inline MWVector<MWMatrix<MWData> > &VectorMatrixMultiThreadCalculator::AssignPlus(
+    const MWVector<MWMatrix<MWData> > &v, 
+    const MWMatrix<MWData> &m,
+    MWVector<MWMatrix<MWData> > &ret) {
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssignPlus221;
+    _vector_matrix_pt_1 = &v;
+    _matrix_pt_1 = &m;
+    _ret_pt = &ret;
+    return AssignOperateMultiThread();
+}
+
+inline MWVector<MWMatrix<MWData> > &VectorMatrixMultiThreadCalculator::AssignTimes(
+    const MWVector<MWMatrix<MWData> > &v, 
+    const MWMatrix<MWData> &m,
+    MWVector<MWMatrix<MWData> > &ret) {
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssignTimes221;
+    _vector_matrix_pt_1 = &v;
+    _matrix_pt_1 = &m;
+    _ret_pt = &ret;
+    return AssignOperateMultiThread();
+}
+
+inline MWVector<MWMatrix<MWData> > &VectorMatrixMultiThreadCalculator::AssignDiagonaledTimesTransformed(
+    const MWVector<MWMatrix<MWData> > &v, 
+    const MWMatrix<MWData> &m,
+    MWVector<MWMatrix<MWData> > &ret) {
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssignDiagonaledTimes221;
+    _vector_matrix_pt_1 = &v;
+    _matrix_pt_1 = &m;
+    _ret_pt = &ret;
+    return AssignOperateMultiThread();
+}
+
+inline MWVector<MWMatrix<MWData> > &VectorMatrixMultiThreadCalculator::AssignTimes(
+    const MWVector<MWMatrix<MWData> > &v, 
+    const MWData &scale,
+    MWVector<MWMatrix<MWData> > &ret) {
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssignTimes220;
+    _vector_matrix_pt_1 = &v;
+    _data_pt_1 = &scale;
+    _ret_pt = &ret;
+    return AssignOperateMultiThread();
+}
+
+inline MWVector<MWMatrix<MWData> > &VectorMatrixMultiThreadCalculator::AssignTimes(
+    const MWMatrix<MWData> &m, 
+    const MWVector<MWMatrix<MWData> > &v,
+    MWVector<MWMatrix<MWData> > &ret) {
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssignTimes212;
+    _matrix_pt_1 = &m;
+    _vector_matrix_pt_1 = &v;
+    _ret_pt = &ret;
+    return AssignOperateMultiThread();
+}
+
+inline MWVector<MWMatrix<MWData> > &VectorMatrixMultiThreadCalculator::AssignSquare(
+    const MWVector<MWMatrix<MWData> > &v, 
+    MWVector<MWMatrix<MWData> > &ret) {
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssignSquare22;
+    _vector_matrix_pt_1 = &v;
+    _ret_pt = &ret;
+    return AssignOperateMultiThread();
+}
+
+inline MWVector<MWMatrix<MWData> > &VectorMatrixMultiThreadCalculator::Assign(
+    const MWVector<MWMatrix<MWData> > &v, 
+    MWVector<MWMatrix<MWData> > &ret) {
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssign22;
+    _vector_matrix_pt_1 = &v;
+    _ret_pt = &ret;
+    return AssignOperateMultiThread();
+}
+
+inline MWMatrix<MWData> &VectorMatrixMultiThreadCalculator::AssignSum(
+    const MWVector<MWMatrix<MWData> > &v, 
+    MWMatrix<MWData> &ret) {
+    MWVector<MWMatrix<MWData> > mid_ret(_thread_id_vector.size(), ret);
+
+    _function = VectorMatrixMultiThreadCalculatorFunctionAssignSum22;
+    _vector_matrix_pt_1 = &v;
+    _ret_pt = &mid_ret;
+    AssignOperateMultiThread();
+
+    return ::AssignSum(mid_ret, ret);
+}

@@ -26,22 +26,31 @@
 //           Beijing, China
 
 
-#ifndef _FIXED_AREA_SIN_BY_COUNT_FUNCTION_H_
-#define _FIXED_AREA_SIN_BY_COUNT_FUNCTION_H_
+#include <math.h>
 
-#include <mwsingleton.h>
+#include "mwmathglobal.h"
 
-#include "mwunderivablemathfunction.h"
+#include "logsigfunction.h"
 
-class FixedAreaSinByCountFunction;
+MWVector<MWData> LogsigFunction::GetValueStructure(const MWVector<MWData>
+                                                   &input) const {
+    return MWVector<MWData>(1);
+}
 
-class FixedAreaSinByCountFunction : public MWUnderivableMathFunction,
-    public MWSingleton<FixedAreaSinByCountFunction> {
-  public:
-    virtual MWVector<MWData> GetValueStructure(const MWVector<MWData> &input)
-    const;
-    virtual MWVector<MWData> &AssignValue(const MWVector<MWData> &input,
-                                          MWVector<MWData> &ret) const;
-};
+MWVector<MWData> &LogsigFunction::AssignValue(const MWVector<MWData> &input,
+                                              MWVector<MWData> &ret) const {
+    ret[0] = 1 / (1 + pow(MW_MATH_CONSTANT_E, - input[0]));
+    return ret;
+}
 
-#endif
+MWVector<MWData> LogsigFunction::GetDerivativeStructure(
+    const MWVector<MWData> &input) const {
+    return MWVector<MWData>(1);
+}
+
+MWVector<MWData> &LogsigFunction::AssignDerivative(const MWVector<MWData>
+                                                   &input, MWVector<MWData> &ret) const {
+    AssignValue(input, ret);
+    ret[0] = (1 - ret[0]) * ret[0];
+    return ret;
+}

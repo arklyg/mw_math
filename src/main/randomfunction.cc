@@ -26,22 +26,19 @@
 //           Beijing, China
 
 
-#ifndef _FIXED_AREA_SIN_BY_COUNT_FUNCTION_H_
-#define _FIXED_AREA_SIN_BY_COUNT_FUNCTION_H_
+#include "randomfunction.h"
 
-#include <mwsingleton.h>
+void RandomFunction::initialize(unsigned int *seedp) {
+    srand(seedp == NULL ? time(NULL) : *seedp);
+}
 
-#include "mwunderivablemathfunction.h"
+MWVector<MWData> RandomFunction::GetValueStructure(const MWVector<MWData>
+                                                   &input) const {
+    return MWVector<MWData>(1);
+}
 
-class FixedAreaSinByCountFunction;
-
-class FixedAreaSinByCountFunction : public MWUnderivableMathFunction,
-    public MWSingleton<FixedAreaSinByCountFunction> {
-  public:
-    virtual MWVector<MWData> GetValueStructure(const MWVector<MWData> &input)
-    const;
-    virtual MWVector<MWData> &AssignValue(const MWVector<MWData> &input,
-                                          MWVector<MWData> &ret) const;
-};
-
-#endif
+MWVector<MWData> &RandomFunction::AssignValue(const MWVector<MWData> &input,
+                                              MWVector<MWData> &ret) const {
+    ret[0] = ((MWData) rand()) / RAND_MAX * (input[1] - input[0]) + input[0];
+    return ret;
+}

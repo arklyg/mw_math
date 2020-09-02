@@ -26,22 +26,18 @@
 //           Beijing, China
 
 
-#ifndef _FIXED_AREA_SIN_BY_COUNT_FUNCTION_H_
-#define _FIXED_AREA_SIN_BY_COUNT_FUNCTION_H_
+#include "fixedareasinupbycountfunction.h"
 
-#include <mwsingleton.h>
+MWVector<MWData> FixedAreaSinUpByCountFunction::GetValueStructure(
+    const MWVector<MWData> &input) const {
+    return MWVector<MWData>(1);
+}
 
-#include "mwunderivablemathfunction.h"
-
-class FixedAreaSinByCountFunction;
-
-class FixedAreaSinByCountFunction : public MWUnderivableMathFunction,
-    public MWSingleton<FixedAreaSinByCountFunction> {
-  public:
-    virtual MWVector<MWData> GetValueStructure(const MWVector<MWData> &input)
-    const;
-    virtual MWVector<MWData> &AssignValue(const MWVector<MWData> &input,
-                                          MWVector<MWData> &ret) const;
-};
-
-#endif
+MWVector<MWData> &FixedAreaSinUpByCountFunction::AssignValue(
+    const MWVector<MWData> &input, MWVector<MWData> &ret) const {
+    ret[0] = MW_MATH_CONSTANT_TWO_DIVIDES_PIE_DEVIDES_TOW_DEVIDES_PIE_MINUS_ONE *
+             (1 / input[1] - MW_MATH_CONSTANT_PIE_DIVIDES_TWO * (sin(
+                                                                     MW_MATH_CONSTANT_TWO_DIVIDES_PIE * (input[0] + 1) / input[1]) - sin(
+                                                                     MW_MATH_CONSTANT_TWO_DIVIDES_PIE * input[0] / input[1])));
+    return ret;
+}

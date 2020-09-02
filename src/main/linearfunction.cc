@@ -26,22 +26,30 @@
 //           Beijing, China
 
 
-#ifndef _FIXED_AREA_SIN_BY_COUNT_FUNCTION_H_
-#define _FIXED_AREA_SIN_BY_COUNT_FUNCTION_H_
+#include <math.h>
 
-#include <mwsingleton.h>
+#include "mwmathglobal.h"
 
-#include "mwunderivablemathfunction.h"
+#include "linearfunction.h"
 
-class FixedAreaSinByCountFunction;
+MWVector<MWData> LinearFunction::GetValueStructure(const MWVector<MWData>
+                                                   &input) const {
+    return MWVector<MWData>(1);
+}
 
-class FixedAreaSinByCountFunction : public MWUnderivableMathFunction,
-    public MWSingleton<FixedAreaSinByCountFunction> {
-  public:
-    virtual MWVector<MWData> GetValueStructure(const MWVector<MWData> &input)
-    const;
-    virtual MWVector<MWData> &AssignValue(const MWVector<MWData> &input,
-                                          MWVector<MWData> &ret) const;
-};
+MWVector<MWData> &LinearFunction::AssignValue(const MWVector<MWData> &input,
+                                              MWVector<MWData> &ret) const {
+    ret[0] = input[0];
+    return ret;
+}
 
-#endif
+MWVector<MWData> LinearFunction::GetDerivativeStructure(
+    const MWVector<MWData> &input) const {
+    return MWVector<MWData>(1);
+}
+
+MWVector<MWData> &LinearFunction::AssignDerivative(const MWVector<MWData>
+                                                   &input, MWVector<MWData> &ret) const {
+    ret[0] = 1;
+    return ret;
+}
